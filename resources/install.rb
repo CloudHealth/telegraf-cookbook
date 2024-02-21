@@ -56,6 +56,8 @@ action :create do
         telegraf_arch = 'armhf'
       when 'armv5l'
         telegraf_arch = 'armel'
+      when 'aarch64'
+        telegraf_arch = 'arm64'
       else
         telegraf_arch = 'amd64'
         Chef::Log.warn('Arch not detected properly, falling back to amd64')
@@ -177,10 +179,18 @@ action :create do
     raise "#{new_resource.install_type} is not a valid install type."
   end
 
-  service "telegraf_#{new_resource.name}" do
-    service_name 'telegraf'
-    action :enable
-    delayed_action :start
+  # Ancient arm64 version of chef client does not support delayed_action.
+  if node['kernel']['machine'] == 'aarch64'
+    service "telegraf_#{new_resource.name}" do
+      service_name 'telegraf'
+      action [:enable, :start]
+    end
+  else
+    service "telegraf_#{new_resource.name}" do
+      service_name 'telegraf'
+      action :enable
+      delayed_action :start
+    end
   end
 end
 
